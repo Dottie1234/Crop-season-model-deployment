@@ -1,6 +1,5 @@
 from fastapi import FastAPI, HTTPException
 import pandas as pd
-import numpy as np
 import pickle
 from pydantic import BaseModel
 import joblib
@@ -51,13 +50,10 @@ def predict(data: FeaturesInput):
                    'Nigeria': 1,
                    'South Africa': 2,
                    'Sudan': 3}}, inplace=True)
-
-        #print(data)
-        #new_data.to_numpy()
+        
         prediction = model.predict(new_data)
 
         return {'prediction': str(prediction)}
-        #return {'message': str(new_data)}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
     
