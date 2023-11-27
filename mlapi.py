@@ -1,5 +1,6 @@
 from fastapi import FastAPI, HTTPException
 import pandas as pd
+import numpy as np
 import pickle
 from pydantic import BaseModel
 import joblib
@@ -20,37 +21,45 @@ with open('nb_model.pkl', 'rb') as file:
 encoder = joblib.load('encoder.joblib')
 
 class FeaturesInput(BaseModel):
-    crop: str
     temperature: float
     humidity: float
     ph: float
     water_availability: float
+    crop: str
     country: str
     
 @app.post('/predict')
 def predict(data: FeaturesInput):
     try:
-        new_data = pd.DataFrame({
-            'temperature': [data.temperature],
-            'humidity': [data.humidity],
-            'ph': [data.ph],
-            'water_availability': [data.water_availability],
-            'crop': [data.crop],
-            'country': [data.country]
-        })
+        data_dict = data.model_dump()
+        new_data_dict = {key: [value] for key, value in data_dict.items()}
+        new_data = pd.DataFrame(new_data_dict)
+        new_data.replace({'crop':{'blackgram':0,
+                 'chickpea': 1,
+                 'cotton': 2,
+                 'jute':3,
+                 'kidneybeans':4,
+                 'lentil':5,
+                 'maize':6,
+                 'mothbeans':7,
+                 'mungbean': 8,
+                 'muskmelon':9,
+                 'pigeonpeas':10,
+                 'rice':11,
+                 'watermelon':12},
+         'country':{'Kenya':0,
+                   'Nigeria': 1,
+                   'South Africa': 2,
+                   'Sudan': 3}}, inplace=True)
 
-        new_data_enc = encoder.transform(new_data[['crop', 'country']])
-        encoded_df = pd.DataFrame(new_data_enc, columns=encoder.get_feature_names_out(['crop', 'country']))
+        #print(data)
+        #new_data.to_numpy()
+        prediction = model.predict(new_data)
 
-        data = pd.concat([new_data, encoded_df], axis=1)
-
-        data = data.drop(['crop', 'country'], axis=1)
-
-        prediction = model.predict(data)
-
-        return {'prediction': new_data_enc}
+        return {'prediction': str(prediction)}
+        #return {'message': str(new_data)}
     except Exception as e:
-        raise HTTPException(status_code=500, detail='something is wrong')
+        raise HTTPException(status_code=500, detail=str(e))
     
     
 @app.get('/')
@@ -60,4 +69,4 @@ def read_root():
 if __name__ == '__main__':
     import uvicorn
 
-    uvicorn.run('mlapi:app', host='127.0.0.1', port=8000, log_level='info', reload=True)
+    uvicorn.run('mlapi:app', port=8000, log_level='info', reload=True)
