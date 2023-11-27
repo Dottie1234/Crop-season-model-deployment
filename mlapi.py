@@ -14,7 +14,7 @@ app.add_middleware(
     allow_headers=["*"]
 )
 
-with open('nb_model.pkl', 'rb') as file:
+with open('cat_model.pkl', 'rb') as file:
     model = pickle.load(file)
 
 encoder = joblib.load('encoder.joblib')
